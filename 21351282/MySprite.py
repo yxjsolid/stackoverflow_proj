@@ -188,7 +188,7 @@ class DragSprite(__MouseMixin, pygame.sprite.Sprite):
         dx = pos[0] - self.lastPos[0]
         dy = pos[1] - self.lastPos[1]
         self.lastPos = pos
-        center = (self.rect.center[0] + dx, self.rect.center[1] + dy)      
+        center = (self.rect.center[0] + dx, self.rect.center[1] + dy)
         self.rect.center = center
 
         return
@@ -216,7 +216,7 @@ class DragSprite(__MouseMixin, pygame.sprite.Sprite):
                 pygame.draw.rect(self.image, yellow, (0,0,W-1,H-1), 2)
                 pygame.Surface.blit(self.image, self.imageOrig, (pad/2,pad/2,W-pad,H-pad))
 
-                self.rect =  pygame.Rect(0,0,W,H)
+                self.rect = pygame.Rect(0,0,W,H)
                 self.rect.center = center
         else:
             self.is_select = 0
@@ -231,7 +231,7 @@ class DragSprite(__MouseMixin, pygame.sprite.Sprite):
         return
 
 
-def drawBoader1(image, rect):
+def drawBoader(image, rect):
     W,H = (rect.width, rect.height)
     yellow = (255, 255, 0)
     pygame.draw.rect(image, yellow, (0,0,W-2,H-2), 2)
@@ -246,11 +246,12 @@ class ButtonSprite(DragSprite):
             self.status = 0
             self.index = 0
 
+            self.parent = parent
             self.initPos = (initPos[0], initPos[1])
             self.width = width
             self.height = height
-            self.rectOrig = pygame.Rect(initPos, (width, height))
-            self.rect = self.rectOrig.copy()
+            self.rectOnLoad = pygame.Rect(initPos, (width, height))
+            self.rect = self.rectOnLoad.copy()
 
             self.operationOn = None
             self.operationOff = None
@@ -270,28 +271,6 @@ class ButtonSprite(DragSprite):
         def getOperationOffItem(self):
             return self.operationOff
 
-        def loadImgResource1(self, file):
-            """
-                load image with PIL lib
-            """
-            im = Image.open(file)
-            im = im.resize((self.width, self.height))
-            imagedata = im.convert('RGBA').tostring()
-            imagesize = im.size
-            imageSurface = pygame.image.fromstring(imagedata, imagesize , "RGBA")
-
-        def loadImgResource2(self, dicKey, file):
-            """
-                load image with pygame lib
-            """
-            image_file = pygame.image.load(file)
-            imagedata = pygame.image.tostring(image_file, "RGBA")
-            imagesize = image_file.get_size()
-            imageSurface = pygame.image.fromstring(imagedata, imagesize , "RGBA")
-            #imageS1.fill(color, None, BLEND_ADD)
-            #imageSurface = pygame.transform.smoothscale(imageSurface,(self.width, self.height))
-            #self.imageResource.append(imageSurface)
-            self.imageResource[dicKey] = imageSurface
 
         def loadImgResource(self, dict):
             """
@@ -305,11 +284,6 @@ class ButtonSprite(DragSprite):
             imagesize = image_file.get_size()
             imageSurface = pygame.image.fromstring(imagedata, imagesize , "RGBA")
 
-            #x = max(imagesize[0], imagesize[1])
-            #newImg = pygame.Rect((0,0), (x, x))
-            #imageS1.fill(color, None, BLEND_ADD)
-            #imageSurface = pygame.transform.smoothscale(imageSurface,(self.width, self.height))
-            #self.imageResource.append(imageSurface)
             self.imageResource[key] = (file_name, imageSurface)
 
         def resizeResource(self, src, size):
@@ -317,63 +291,36 @@ class ButtonSprite(DragSprite):
 
         def setCurrentResource(self, status):
             self.currentStatus = status
-
-            self.imageOrig = self.resizeResource(self.imageResource[status][1], (self.width, self.height))
-            self.image = self.imageOrig.copy()
-           # self.rect = self.image.get_rect().copy()
+            self.imageOnLoad = self.resizeResource(self.imageResource[status][1], (self.width, self.height))
+            self.image = pygame.transform.scale(self.imageOnLoad, (self.rect.width, self.rect.height))
 
         def switchResource(self, index):
             self.setCurrentResource(index)
 
+        def onZoomUpdate(self, zoomRatio):
+            parentRect = pygame.Rect(self.parent.GetRect())
+            dx = self.rectOnLoad.centerx - parentRect.centerx
+            dy = self.rectOnLoad.centery - parentRect.centery
 
-        def onZoomUpdate(self, parent, ratio):
-            #self.rect.x *= ratio
-           #self.rect.y *= ratio
+            self.rect.centerx = parentRect.centerx + dx*zoomRatio
+            self.rect.centery = parentRect.centery + dy*zoomRatio
 
-            parentRect = pygame.Rect(parent.GetRect())
+            self.rect.height = self.imageOnLoad.get_rect().height * zoomRatio
+            self.rect.width = self.imageOnLoad.get_rect().width * zoomRatio
 
-
-            dx = self.rectOrig.centerx - parentRect.centerx
-            dy = self.rectOrig.centery - parentRect.centery
-
-            self.rect.centerx = parentRect.centerx + dx*ratio
-            self.rect.centery = parentRect.centery + dy*ratio
-
-            #self.rect.centery *= ratio
-            print "onZoomUpdate"
-            #pygame.Rect
+            self.image = pygame.transform.scale(self.imageOnLoad, (self.rect.width, self.rect.height))
 
         def update(self, current_time, ratio):
-            # return
-            # if current_time - self.lastUpdate > 500:
-            #     self.lastUpdate = current_time
-            #     self.status = ~(self.status)
-            #     self.switchResource(self.status)
-
-            rectTmp = self.rectOrig
-
-           #pygame.Rect
-
-            #print self.rect, self.rect.center
-
             if self.isSelected():
-                # print "buttonSprite selected"
-                drawBoader1(self.image, self.image.get_rect())
+                drawBoader(self.image, self.image.get_rect())
             else:
-                self.image = self.imageOrig.copy()
-
-
-                #self.image = pygame.transform.scale(self.imageOrig, (int(self.width*ratio), int(self.height*ratio)))
-
-
-
-                #self.rect
+                pass
+                #self.image = self.imageOnLoad.copy()
 
         def onRightUp(self, event):
             print "onRightUp"
             event.Skip(False)
             pass
-
 
         def onLeftDClick(self, event):
             if self.currentStatus == "on":
@@ -384,9 +331,11 @@ class ButtonSprite(DragSprite):
             return
 
         def move(self, pos):
-            dx = pos[0] - self.lastPos[0]
-            dy = pos[1] - self.lastPos[1]
             DragSprite.move(self, pos)
 
+            parentRect = pygame.Rect(self.parent.GetRect())
+            centerDx = self.rect.centerx - parentRect.centerx
+            centerDy = self.rect.centery - parentRect.centery
 
-
+            self.rectOnLoad.centerx = parentRect.centerx + centerDx/self.parent.zoomRatio
+            self.rectOnLoad.centery = parentRect.centery + centerDy/self.parent.zoomRatio

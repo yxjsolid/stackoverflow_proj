@@ -18,8 +18,6 @@ class MyFrame1 ( wx.Frame ):
         fgSizer1.SetFlexibleDirection( wx.VERTICAL )
         fgSizer1.SetNonFlexibleGrowMode( wx.FLEX_GROWMODE_ALL )
 
-        #self.panelMain = wx.Panel( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL )
-
 
         self.panelMain = MyHmiPanel(self, -1)
 
@@ -37,34 +35,29 @@ class MyFrame1 ( wx.Frame ):
         self.bZoomOut = wx.Button( self.m_panel4, wx.ID_ANY, u"Zoom Out", wx.DefaultPosition, wx.DefaultSize, 0 )
         bSizer3.Add( self.bZoomOut, 0, wx.ALL, 5 )
 
-
         self.m_panel4.SetSizer( bSizer3 )
         self.m_panel4.Layout()
         bSizer3.Fit( self.m_panel4 )
         fgSizer1.Add( self.m_panel4, 1, wx.EXPAND |wx.ALL, 5 )
 
-
         self.SetSizer( fgSizer1 )
         self.Layout()
-
         self.Centre( wx.BOTH )
 
         # Connect Events
         self.bZoomIn.Bind( wx.EVT_BUTTON, self.onZoomIn )
-        self.bReset.Bind( wx.EVT_BUTTON, self.onReset )
+        self.bReset.Bind( wx.EVT_BUTTON, self.onZoomReset )
         self.bZoomOut.Bind( wx.EVT_BUTTON, self.onZoomOut )
 
     def __del__( self ):
         pass
 
-
-    # Virtual event handlers, overide them in your derived class
     def onZoomIn( self, event ):
         self.panelMain.onZoomIn()
         event.Skip()
 
-    def onReset( self, event ):
-        self.panelMain.onReset()
+    def onZoomReset( self, event ):
+        self.panelMain.onZoomReset()
         event.Skip()
 
     def onZoomOut( self, event ):
@@ -77,7 +70,6 @@ class MyHmiPanel(wx.Panel):
         wx.Window.__init__(self, parent, ID)
         self.parent = parent
         self.hwnd = self.GetHandle()
-
         self.size = self.GetSizeTuple()
         self.size_dirty = True
         self.rootSpriteGroup = pygame.sprite.LayeredUpdates()
@@ -86,131 +78,67 @@ class MyHmiPanel(wx.Panel):
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_TIMER, self.Update, self.timer)
         self.Bind(wx.EVT_SIZE, self.OnSize)
-
         self.fps = 60.0
         self.timespacing = 1000.0 / self.fps
         self.timer.Start(self.timespacing, False)
-        #self.timer.Start(5000, False)
-
-        self.linespacing = 5
-        # self.addTestSprite()
-
-        self.zoomRatio = 1
-
         self.previous_time = 0
         self.Bind(wx.EVT_MOUSE_EVENTS, self.OnMouse)
 
-
         self.selectedSprite = None
-        #self.SetDoubleBuffered(True)
-        #testRSizedWidget(self)
 
-        print self.size
+        self.zoomRatio = 1
+        self.background = None
+        self.bgRect = None
+        self.backgroundOnUpdate = None
+        self.bgRetOnUpdate = None
 
-
-
+        self.loadBackground()
         self.addTestSprite()
 
-    def loadBG(self, screen):
-        parentRect = pygame.Rect(self.GetRect())
-        background = pygame.image.load(image_bg)
-        bgRect = background.get_rect()
-        #pygame.transform.scale(background, (1200,800))  #or some size x,y here.
+    def loadBackground(self):
+        self.background = pygame.image.load(image_bg)
+        self.bgRect = self.background.get_rect()
 
-        size = width, height = bgRect.width, bgRect.height
+        self.backgroundOnUpdate = self.background.copy()
+        self.bgRetOnUpdate = self.bgRect.copy()
 
-        #bgRect.center = parentRect.center
-        bgRect.width *= self.zoomRatio
-        bgRect.height *= self.zoomRatio
-        bgRect.center = screen.get_rect().center
+    def resizeUpdateBackground(self):
+        self.bgRect.center = self.screen.get_rect().center
+        self.bgRetOnUpdate = self.bgRect.copy()
 
-        bd = pygame.transform.scale(background, (bgRect.width,bgRect.height))
-        screen.blit(bd, bgRect)
+    def zoomUpdateBackground(self, zoomRatio):
+        self.bgRetOnUpdate.width = self.bgRect.width * zoomRatio
+        self.bgRetOnUpdate.height = self.bgRect.height * zoomRatio
+        self.bgRetOnUpdate.width = self.bgRect.width * zoomRatio
+        self.bgRetOnUpdate.center = self.screen.get_rect().center
+        self.backgroundOnUpdate = pygame.transform.scale(self.background, (self.bgRetOnUpdate.width, self.bgRetOnUpdate.height))
 
-
-    def addSpriteToPanel(self, sprite):
-        sprite.parent = self
-        self.rootSpriteGroup.add(sprite, layer=12)
+    def drawBackground(self, screen):
+        screen.blit(self.backgroundOnUpdate, self.bgRetOnUpdate)
 
     def addTestSprite(self):
-
-        """
-        for color, location, speed in [([255, 0, 0], [50, 50], [2,3]),
-                                       ([0, 255, 0], [100, 100], [3,2]),
-                                       ([0, 0, 255], [150, 150], [4,3])]:
-            self.rootSpriteGroup.add(MoveBall(color, location, speed, (350, 350)))
-"""
-        #self.rootSpriteGroup.add(test_Drag_Sprite([100, 100, 100], [200, 200], [5,6], (350, 350)))
-        #self.rootSpriteGroup.add(Sprite_Button([200, 200, 200], [300, 400], [5,6], (350, 350)))
-        #self.rootSpriteGroup.add(AnimateTansporterSprite([200, 200, 200], (150,150), 150,40,500,1))
-        self.rootSpriteGroup.add(ButtonSprite(initPos=(100, 100), width=50, height=50, dicts= [('on', btn_green_on), ('off', btn_green_off)]))
-        self.rootSpriteGroup.add(ButtonSprite(initPos=(200, 200), width=50, height=50, dicts= [('on', btn_red_on), ('off', btn_red_off)]))
-
-
-
-        #ButtonSprite(initPos=(0, 0), width=x, height=y, dicts= [('on', on), ('off', off)])
-
-        #self.rootSpriteGroup.add(specialSprite_transport([200, 200, 200], (100,100), 500,50,1,1))
-        #self.addTestSprite()
-
-    def addSpritePerformanceTest(self):
-        rowMax = 10
-        colMax = 10
-        x_i = 100
-        y_i = 100
-
-        width = 150
-        height = 50
-
-        for i in range(0,rowMax):
-            for j in range(colMax):
-                updateInterval = random.randint(300,2000)
-                trans1 = AnimateTansporterSprite([200, 200, 200], (x_i + i*width +20, y_i + j*width), width,height,updateInterval,1)
-                self.rootSpriteGroup.add(trans1)
+        self.rootSpriteGroup.add(ButtonSprite(self, initPos=(100, 100), width=100, height=100, dicts= [('on', btn_green_on), ('off', btn_green_off)]))
+        self.rootSpriteGroup.add(ButtonSprite(self, initPos=(200, 200), width=100, height=100, dicts= [('on', btn_red_on), ('off', btn_red_off)]))
 
     def Update(self, event):
-        # Any update tasks would go here (moving sprites, advancing animation frames etc.)
         self.Redraw()
-
-        if hasattr(self, 'testBtn'):
-                #self.testBtn.Update()
-            #self.testBtn.OnPaint(event)
-            #self.testBtn.Update()
-            #self.testBtn.Refresh()
-            pass
         return
 
-
-
-
     def Redraw(self):
-        #print "select page is HIM", self.GetParent().GetCurrentPage() is self
-        #print "isEnabled", self.IsEnabled()
-        #print "MyHmiPanel, Redraw"
-        # return
-
         if  self.size[0] == 0  or  self.size[1] == 0:
             print "MyHmiPanel.Redraw", self.size
             return
 
         if self.size_dirty:
             self.screen = pygame.Surface(self.size, 0, 32)
+            self.resizeUpdateBackground()
             self.size_dirty = False
 
         self.screen.fill((0,0,0))
+        self.drawBackground(self.screen)
 
-        self.loadBG(self.screen)
-
-        cur = 0
         w, h = self.screen.get_size()
-
-        # while cur <= h:
-        #     pygame.draw.aaline(self.screen, (255, 255, 255), (0, h - cur), (cur, 0))
-        #     cur += self.linespacing
-
         current_time = pygame.time.get_ticks()
-        #print current_time
-        #print "current_time - previous_time = ", current_time - self.previous_time
 
         self.previous_time = current_time
         self.rootSpriteGroup.update(current_time, self.zoomRatio)
@@ -227,14 +155,6 @@ class MyHmiPanel(wx.Panel):
         dc = wx.BufferedDC( dc)
         dc.DrawBitmap(bmp, 0, 0, 1)  # Blit the bitmap image to the display
 
-        if hasattr(self, 'testBtn'):
-            #dddc = self.testBtn.OnDrawBtn()
-            pass
-
-            # (width, height) = self.GetClientSizeTuple()
-            # (x,y) = self.testBtn.GetPositionTuple()
-            #
-            # dc.Blit(x,y,width,height, dddc, 0,0, useMask=True)
 
     def checkCollide(self, event):
         x , y = (event.GetX(),event.GetY())
@@ -273,39 +193,25 @@ class MyHmiPanel(wx.Panel):
 
 
     def OnMouse(self, event):
-        mousePos = (event.GetX(),event.GetY())
         onMouseObj = self.checkCollide(event)
-        #print "MyHmiPanel Mouse Event:", event
         event.Skip()
 
         if onMouseObj:
             onMouseObj.OnMouseHandler(event)
 
-
-        #print "event.GetSkipped()", event.GetSkipped()
-
         if not event.GetSkipped():
-
             print "event dropped "
             return
 
         if event.LeftDown():
-            #print "LeftDown",(event.GetX(),event.GetY())
             self.onSelectSprite(event, onMouseObj)
         elif event.LeftUp():
-            #print "left up"
             pass
-
         elif event.RightUp():
-            #print "RightUp"
             self.onSelectSprite(event, onMouseObj)
         elif event.RightDown():
-            #print "RightDown",(event.GetX(),event.GetY())
             self.onSelectSprite(event, onMouseObj)
-
         elif event.Dragging() and event.LeftIsDown():
-            #print "left Dragging", (event.GetX(),event.GetY())
-
             if self.selectedSprite:
                 self.selectedSprite.move((event.GetX(),event.GetY()))
 
@@ -318,46 +224,31 @@ class MyHmiPanel(wx.Panel):
         self.size_dirty = True
 
     def Kill(self, event):
-        # Make sure Pygame can't be asked to redraw /before/ quitting by unbinding all methods which
-        # call the Redraw() method
-        # (Otherwise wx seems to call Draw between quitting Pygame and destroying the frame)
-        # This may or may not be necessary now that Pygame is just drawing to surfaces
         self.Unbind(event=wx.EVT_PAINT, handler=self.OnPaint)
         self.Unbind(event=wx.EVT_TIMER, handler=self.Update, source=self.timer)
-
-
 
     def onZoomIn(self):
         self.zoomRatio += 0.2
         self.onZoomUpdate()
 
-
-
-    def onReset(self):
+    def onZoomReset(self):
         self.zoomRatio = 1
         self.onZoomUpdate()
-
 
     def onZoomOut(self):
         if self.zoomRatio > 0.2:
             self.zoomRatio -= 0.2
-
         self.onZoomUpdate()
 
-
     def onZoomUpdate(self):
+        self.zoomUpdateBackground(self.zoomRatio)
         for s in self.rootSpriteGroup.sprites():
-            s.onZoomUpdate(self, self.zoomRatio)
+            s.onZoomUpdate(self.zoomRatio)
 
 
 if __name__=='__main__':
         app = wx.App(redirect=False)
-        # frame = wx.Frame(None, size=(1024,768))
-        #
-        # panel = MyHmiPanel(frame, -1)
-
-
-        frame = MyFrame1(None, (1024, 768))
-        
+        frame = MyFrame1(None, (800, 600))
+        frame.SetPosition((100, 100))
         frame.Show()
         app.MainLoop()
