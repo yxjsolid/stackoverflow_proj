@@ -1,31 +1,12 @@
-import cStringIO, base64
+
 import pygame
+
+from res import *
 from pygame.locals import *
+from wx.lib.embeddedimage import PyEmbeddedImage
 from math import pi
 from PIL import Image
-# from MyMiddleWare import *
-#from MyGlobal import *
-#import MyMiddleWare
-#from MiddleWare_Widget_Setting import *
 
-
-rescoure_dir = r".\image\\"
-
-btn_red_off = rescoure_dir + r"red_up.png"
-btn_red_on = rescoure_dir + "red_down.png"
-
-btn_green_off = rescoure_dir + "green_up.png"
-btn_green_on = rescoure_dir + "green_down.png"
-
-btn_on = rescoure_dir + "btn_on.png"
-btn_off = rescoure_dir + "btn_off.png"
-
-circle_btn_on = rescoure_dir + "circle_btn_on.png"
-circle_btn_off = rescoure_dir + "circle_btn_off.png"
-
-image_fish = rescoure_dir + "fugu.png"
-
-image_bg = rescoure_dir + "bg.jpg"
 
 
 pygame.font.init()
@@ -51,74 +32,18 @@ except:
     SMALL_FONT = BOLD_FONT = pygame.font.Font(None, 20)
  
 
-#help( SMALL_FONT)
-red = (255, 0, 0)
-green = (0, 255, 0)
-blue = (0, 0, 255)
-yellow = (255, 255, 0)
-white = (255, 255, 255)
-
-
-BLACK = (  0,   0,   0)
-WHITE = (255, 255, 255)
-BLUE =  (  0,   0, 255)
-GREEN = (  0, 255,   0)
-RED =   (255,   0,   0)
 
 
 
 
-class Ball(pygame.sprite.Sprite):
-    def __init__(self, color, initial_position):
-        pygame.sprite.Sprite.__init__(self)
-        ball_file = cStringIO.StringIO(base64.decodestring(
-"""iVBORw0KGgoAAAANSUhEUgAAABkAAAAZCAYAAADE6YVjAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJ
-bWFnZVJlYWR5ccllPAAABBJJREFUeNqsVj2PG1UUvfPp8XictXfHa+9mlyJCNEQRWiToqACJAgGC
-LqJNlQZR0IFEj8RPSJkGGooUpEWJkGhR0tAAElI2tsfjjxnPjIdz7oyDF2wSUK72yN43793z7rkf
-Y8N2HFmbbVliGIYiyzIpy1Isy3oHeMswzLOyXJ2tVit9VhTFAxz5Cfge+A7IZIcZmySObQudwIE0
-veanraB1w/O8l5x6D9eXy6UkSaJYLBa6BvsNuAV8uY3sCQlvX4LANM0Xw/Dgdhj2Xm02m+K6LqPR
-PXmeS5qmMp/PZTabyXQ6lclkosS1/QJcB+5vkthrAkoAuc4uHx//0B8MvCAIxG/5jEg0kpIkmcwX
-icTxBIhlHWEURXoedgW4B3wIfHuBJM9yMQ3j5PTk5N7g6MjtdrrS3e9Ku90GUUvc2hkdMYJx5Ivn
-NRC19UReRlRLR/sGeB34UUkMJBcJlcHg6K4SdDvS7/el1+tJp7MnQdCWRqMhDGWZLmWCCFog9rBm
-GBYc50rOKON4uqkSC+IQSC3moeX7N09PX/i4AwLkAoQDxeFhHziU8CCUzt6e+EFLc2QaJi4mFQHy
-kQLZMpME+WJF1sabdYA7Nq4jQbv9OZPs+75cgkSMYH9/X6PhJ9dpTLjruFLkBRyjACBd1BoLzzY8
-T3O0IRntJvCZDXsTTnq262CzrzmgRHu4+QEIQhAxNzRWU1mTxfjOwvBIAOlIYNnWtja5bqM33mN/
-sBEdx9bNPOQ1PWlqZJdAFKoMrEI6R+9gj6t7cUl1zjKnjFvsfaybr1Uqlv94ypXSKCud+aefpezs
-7O3LL9s4c5U65gCrhGDDpUkqyWIuU1STweNlJRe7nAlmA+ZaVbnmiD4KFNEWC+3VqjB5YImDdMA+
-YKONx2OVgxefojRL8CzmCxkOhxLhWYy+mGIvz6RKmv096X91PErP4Byazapbs3vZB45bVQqTzBzQ
-kjQBQSTnjx7JcDTCRSLkKNY9SbKACsttHKZdrIqHILnGCNhoDU0qG83U5mNUVTOKShRPYo3m8fAc
-nT/S/3mWFy2KrXKNOFbuI+Rr1FvLsB731Ho2m2pU7I1Sx8pSHTLaESIZjob6nfso2w77mSR3IMsN
-zh4mmLOIBAkO6fjAgESdV1MYiV4kiUZHRDjD3E0Qza580D+rjsUdAQEj4fRl8wUkqBttPeo5RlJI
-uB71jIASc8D+i4W8IoX8CviC5cuI+JlgpLsgcF1ng6RQyaoX1oWX1i67DTxe9w+9/EHW9VOrngCW
-ZfNFpmvVWOfUzZ/mfG0HwHBz4ZV1kz8nvLuL+YPnRPDJ00J8A/j9fzrnW+sjeUbjbP8amDyj86z+
-tXL5PwzOC4njj4K3gavA8cazczYacLd+p/+6y8mfAgwAsRuLfp/zVLMAAAAASUVORK5CYII="""))
+class PyGamePseudoImage():
+    def __init__(self, size, color):
+        self.screen = pygame.Surface(size, 0, 32)
+        self.screen.fill(color)
 
-#        screen = pygame.display.set_mode([350, 350])
-        
-        image = pygame.image.load(ball_file, 'file')
+    def getImage(self):
+        return self.screen
 
-
-
-        print "aaaaaaaaaaaaaaa", image
-        
-        print image.get_size()
-
-
-        self.imagestr = pygame.image.tostring(image, "RGBA")
-        
-
-        self.image = pygame.image.fromstring(self.imagestr, (25, 25), "RGBA")
-
-
-        #self.image = pygame.image.load(ball_file, 'file').convert_alpha()
-       # 
-        #print self.image
-
-        self.rect = self.image.fill(color, None, BLEND_ADD)
-        self.rect.topleft = initial_position
-
-        print "self.rect", self.rect
-       
 
 
 class __MouseMixin:
@@ -279,7 +204,9 @@ class ButtonSprite(DragSprite):
             key = dict[0]
             file_name = dict[1]
 
-            image_file = pygame.image.load(file_name)
+
+            #image_file = pygame.image.load(file_name) #use this to load real image
+            image_file = PyGamePseudoImage((500,500), file_name).getImage()
             imagedata = pygame.image.tostring(image_file, "RGBA")
             imagesize = image_file.get_size()
             imageSurface = pygame.image.fromstring(imagedata, imagesize , "RGBA")

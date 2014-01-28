@@ -1,68 +1,222 @@
 import wx
 import pygame
-from MySprite import *
-from pygame.locals import *
 
-#from import noname.py *
+BLACK = (  0,   0,   0)
+WHITE = (255, 255, 255)
+BLUE =  (  0,   0, 255)
+GREEN = (  0, 255,   0)
+RED =   (255,   0,   0)
 
-class MyFrame1 ( wx.Frame ):
+pygame.font.init()
+try:
+    regular_font_file = os.path.join(os.path.dirname(__file__), "Vera.ttf")
+    bold_font_file = os.path.join(os.path.dirname(__file__), "VeraBd.ttf")
 
-    def __init__( self, parent, fSize ):
-        wx.Frame.__init__ ( self, parent, id = wx.ID_ANY, title = wx.EmptyString, pos = wx.DefaultPosition, size = fSize, style = wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL )
+    # Check for cx_Freeze
+    #
+    if "frozen" in sys.__dict__.keys() and sys.frozen:
 
-        self.SetSizeHintsSz( wx.DefaultSize, wx.DefaultSize )
+        regular_font_file = os.path.join(sys.path[1], "Vera.ttf")
+        bold_font_file = os.path.join(sys.path[1], "VeraBd.ttf")
 
-        fgSizer1 = wx.FlexGridSizer( 2, 1, 0, 0 )
-        fgSizer1.AddGrowableCol( 1 )
-        fgSizer1.AddGrowableRow( 0 )
-        fgSizer1.SetFlexibleDirection( wx.VERTICAL )
-        fgSizer1.SetNonFlexibleGrowMode( wx.FLEX_GROWMODE_ALL )
+    BIG_FONT = pygame.font.Font(regular_font_file, 30)
+    SMALL_FONT = pygame.font.Font(regular_font_file, 12)
+    BOLD_FONT = pygame.font.Font(bold_font_file, 12)
+
+except:
+    # TODO: log used font: pygame.font.get_default_font()
+    #print("Could not load {0}".format(os.path.join(os.path.dirname(__file__), "Vera.ttf")))
+    BIG_FONT = pygame.font.Font(None, 40)
+    SMALL_FONT = BOLD_FONT = pygame.font.Font(None, 20)
 
 
-        self.panelMain = MyHmiPanel(self, -1)
+class PyGamePseudoImage():
+    def __init__(self, size, color):
+        self.screen = pygame.Surface(size, 0, 32)
+        self.screen.fill(color)
 
-        fgSizer1.Add( self.panelMain, 1, wx.EXPAND |wx.ALL, 5 )
+    def getImage(self):
+        return self.screen
 
-        self.m_panel4 = wx.Panel( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL )
-        bSizer3 = wx.BoxSizer( wx.HORIZONTAL )
+class __MouseMixin:
 
-        self.bZoomIn = wx.Button( self.m_panel4, wx.ID_ANY, u"Zoom In", wx.DefaultPosition, wx.DefaultSize, 0 )
-        bSizer3.Add( self.bZoomIn, 0, wx.ALL, 5 )
-
-        self.bReset = wx.Button( self.m_panel4, wx.ID_ANY, u"Reset", wx.DefaultPosition, wx.DefaultSize, 0 )
-        bSizer3.Add( self.bReset, 0, wx.ALL, 5 )
-
-        self.bZoomOut = wx.Button( self.m_panel4, wx.ID_ANY, u"Zoom Out", wx.DefaultPosition, wx.DefaultSize, 0 )
-        bSizer3.Add( self.bZoomOut, 0, wx.ALL, 5 )
-
-        self.m_panel4.SetSizer( bSizer3 )
-        self.m_panel4.Layout()
-        bSizer3.Fit( self.m_panel4 )
-        fgSizer1.Add( self.m_panel4, 1, wx.EXPAND |wx.ALL, 5 )
-
-        self.SetSizer( fgSizer1 )
-        self.Layout()
-        self.Centre( wx.BOTH )
-
-        # Connect Events
-        self.bZoomIn.Bind( wx.EVT_BUTTON, self.onZoomIn )
-        self.bReset.Bind( wx.EVT_BUTTON, self.onZoomReset )
-        self.bZoomOut.Bind( wx.EVT_BUTTON, self.onZoomOut )
-
-    def __del__( self ):
+    def onLeftUp(self, event):
         pass
 
-    def onZoomIn( self, event ):
-        self.panelMain.onZoomIn()
+    def onLeftDown(self, event):
+        pass
+
+    def onLeftDClick(self, event):
+        pass
+
+    def onRightUp(self, event):
+        pass
+
+    def onRightDown(self, event):
+        pass
+
+    def onDragging(self, event):
+        pass
+
+    def onMouseEnter(self, event):
+        pass
+
+    def OnMouseHandler(self, event):
         event.Skip()
 
-    def onZoomReset( self, event ):
-        self.panelMain.onZoomReset()
-        event.Skip()
+        if event.LeftUp():
+            self.onLeftUp(event)
+        elif event.LeftDown():
+            self.onLeftDown(event)
+        elif event.LeftDClick():
+            self.onLeftDClick(event)
+        elif event.RightUp():
+            self.onRightUp(event)
+        elif event.RightDown():
+            self.onRightDown(event)
+        elif event.Dragging() and event.LeftIsDown():
+            self.onDragging(event)
 
-    def onZoomOut( self, event ):
-        self.panelMain.onZoomOut()
-        event.Skip()
+        pass
+
+
+class DragSprite(__MouseMixin, pygame.sprite.Sprite):
+    SPRITE_BUTTON, SPRITE_TRANSPORTER = range(2)
+
+    def __init__(self, parent=None):
+        pygame.sprite.Sprite.__init__(self)
+        self.is_select = 0
+        self.lastPos = 0
+        self.lastUpdate = 0
+        self.parent = parent
+
+    def setLastPos(self, pos):
+        self.lastPos = pos
+
+    def move(self, pos):
+        dx = pos[0] - self.lastPos[0]
+        dy = pos[1] - self.lastPos[1]
+        self.lastPos = pos
+        center = (self.rect.center[0] + dx, self.rect.center[1] + dy)
+        self.rect.center = center
+        return
+
+    def isSelected(self):
+        return self.is_select
+
+    def setSelect(self, is_select):
+        self.is_select = is_select
+        return
+
+    def update(self, current_time):
+        return
+
+def drawBoader(image, rect):
+    W,H = (rect.width, rect.height)
+    yellow = (255, 255, 0)
+    pygame.draw.rect(image, yellow, (0,0,W-2,H-2), 2)
+
+class ButtonSprite(DragSprite):
+    def __init__(self, parent=None, initPos=(0,0), width=50, height=50, dicts=None):
+        DragSprite.__init__(self, parent)
+        self.type = DragSprite.SPRITE_BUTTON
+        self.resourceCfgDict = dicts
+        self.imageResource = {}
+        self.status = 0
+        self.index = 0
+
+        self.parent = parent
+        self.initPos = (initPos[0], initPos[1])
+        self.width = width
+        self.height = height
+        self.rectOnLoad = pygame.Rect(initPos, (width, height))
+        self.rect = self.rectOnLoad.copy()
+
+        self.operationOn = None
+        self.operationOff = None
+
+        self.operationDic = {"on": self.getOperationOnItem, "off": self.getOperationOffItem}
+        self.guiCfg = None
+
+        for dic in dicts:
+            self.loadImgResource(dic)
+
+        self.setCurrentResource("off")
+
+    def getOperationOnItem(self):
+        return self.operationOn
+
+    def getOperationOffItem(self):
+        return self.operationOff
+
+    def loadImgResource(self, dict):
+        """
+            load image with pygame lib
+        """
+        key = dict[0]
+        file_name = dict[1]
+
+        #image_file = pygame.image.load(file_name) #use this to load real image
+        image_file = PyGamePseudoImage((500,500), file_name).getImage()
+        imagedata = pygame.image.tostring(image_file, "RGBA")
+        imagesize = image_file.get_size()
+        imageSurface = pygame.image.fromstring(imagedata, imagesize , "RGBA")
+
+        self.imageResource[key] = (file_name, imageSurface)
+
+    def resizeResource(self, src, size):
+        return pygame.transform.smoothscale(src, size)
+
+    def setCurrentResource(self, status):
+        self.currentStatus = status
+        self.imageOnLoad = self.resizeResource(self.imageResource[status][1], (self.width, self.height))
+        self.image = pygame.transform.scale(self.imageOnLoad, (self.rect.width, self.rect.height))
+
+    def switchResource(self, index):
+        self.setCurrentResource(index)
+
+    def onZoomUpdate(self, zoomRatio):
+        parentRect = pygame.Rect(self.parent.GetRect())
+        dx = self.rectOnLoad.centerx - parentRect.centerx
+        dy = self.rectOnLoad.centery - parentRect.centery
+
+        self.rect.centerx = parentRect.centerx + dx*zoomRatio
+        self.rect.centery = parentRect.centery + dy*zoomRatio
+
+        self.rect.height = self.imageOnLoad.get_rect().height * zoomRatio
+        self.rect.width = self.imageOnLoad.get_rect().width * zoomRatio
+
+        self.image = pygame.transform.scale(self.imageOnLoad, (self.rect.width, self.rect.height))
+
+    def update(self, current_time, ratio):
+        if self.isSelected():
+            drawBoader(self.image, self.image.get_rect())
+        else:
+            pass
+            #self.image = self.imageOnLoad.copy()
+
+    def onRightUp(self, event):
+        print "onRightUp"
+        event.Skip(False)
+        pass
+
+    def onLeftDClick(self, event):
+        if self.currentStatus == "on":
+            self.setCurrentResource("off")
+        elif self.currentStatus == "off":
+            self.setCurrentResource("on")
+
+        return
+
+    def move(self, pos):
+        DragSprite.move(self, pos)
+
+        parentRect = pygame.Rect(self.parent.GetRect())
+        centerDx = self.rect.centerx - parentRect.centerx
+        centerDy = self.rect.centery - parentRect.centery
+
+        self.rectOnLoad.centerx = parentRect.centerx + centerDx/self.parent.zoomRatio
+        self.rectOnLoad.centery = parentRect.centery + centerDy/self.parent.zoomRatio
 
 
 class MyHmiPanel(wx.Panel):
@@ -96,9 +250,9 @@ class MyHmiPanel(wx.Panel):
         self.addTestSprite()
 
     def loadBackground(self):
-        self.background = pygame.image.load(image_bg)
+        #self.background = pygame.image.load(image_file) #use this to load real image
+        self.background = PyGamePseudoImage((500,500), (255, 0, 0)).getImage()
         self.bgRect = self.background.get_rect()
-
         self.backgroundOnUpdate = self.background.copy()
         self.bgRetOnUpdate = self.bgRect.copy()
 
@@ -117,8 +271,10 @@ class MyHmiPanel(wx.Panel):
         screen.blit(self.backgroundOnUpdate, self.bgRetOnUpdate)
 
     def addTestSprite(self):
-        self.rootSpriteGroup.add(ButtonSprite(self, initPos=(100, 100), width=100, height=100, dicts= [('on', btn_green_on), ('off', btn_green_off)]))
-        self.rootSpriteGroup.add(ButtonSprite(self, initPos=(200, 200), width=100, height=100, dicts= [('on', btn_red_on), ('off', btn_red_off)]))
+        #self.rootSpriteGroup.add(ButtonSprite(self, initPos=(100, 100), width=100, height=100, dicts= [('on', btn_red_on), ('off', btn_red_off)]))
+        #self.rootSpriteGroup.add(ButtonSprite(self, initPos=(200, 200), width=100, height=100, dicts= [('on', btn_red_on), ('off', btn_red_off)]))
+        self.rootSpriteGroup.add(ButtonSprite(self, initPos=(100, 100), width=100, height=100, dicts= [('on', GREEN), ('off', BLUE)]))
+        self.rootSpriteGroup.add(ButtonSprite(self, initPos=(200, 200), width=100, height=100, dicts= [('on', GREEN), ('off', BLUE)]))
 
     def Update(self, event):
         self.Redraw()
@@ -126,7 +282,6 @@ class MyHmiPanel(wx.Panel):
 
     def Redraw(self):
         if  self.size[0] == 0  or  self.size[1] == 0:
-            print "MyHmiPanel.Redraw", self.size
             return
 
         if self.size_dirty:
@@ -161,7 +316,6 @@ class MyHmiPanel(wx.Panel):
 
         mousePoint = pygame.sprite.Sprite()
         mousePoint.rect = pygame.Rect(x, y, 1, 1)
-        #copoint = pygame.sprite.spritecollideany(mousePoint, self.rootSpriteGroup)
         copoint = pygame.sprite.spritecollide(mousePoint, self.rootSpriteGroup, None)
 
         if copoint:
@@ -190,7 +344,6 @@ class MyHmiPanel(wx.Panel):
             self.selectedSprite.setLastPos((event.GetX(),event.GetY()))
         else:
             self.removeSelectedSprite()
-
 
     def OnMouse(self, event):
         onMouseObj = self.checkCollide(event)
@@ -246,9 +399,67 @@ class MyHmiPanel(wx.Panel):
             s.onZoomUpdate(self.zoomRatio)
 
 
+class TestFrame ( wx.Frame ):
+    def __init__( self, parent, fSize ):
+        wx.Frame.__init__ ( self, parent, id = wx.ID_ANY, title = wx.EmptyString, pos = wx.DefaultPosition, size = fSize, style = wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL )
+
+        self.SetSizeHintsSz( wx.DefaultSize, wx.DefaultSize )
+
+        fgSizer1 = wx.FlexGridSizer( 2, 1, 0, 0 )
+        fgSizer1.AddGrowableCol( 1 )
+        fgSizer1.AddGrowableRow( 0 )
+        fgSizer1.SetFlexibleDirection( wx.VERTICAL )
+        fgSizer1.SetNonFlexibleGrowMode( wx.FLEX_GROWMODE_ALL )
+
+
+        self.panelMain = MyHmiPanel(self, -1)
+
+        fgSizer1.Add( self.panelMain, 1, wx.EXPAND |wx.ALL, 5 )
+
+        self.m_panel4 = wx.Panel( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL )
+        bSizer3 = wx.BoxSizer( wx.HORIZONTAL )
+
+        self.bZoomIn = wx.Button( self.m_panel4, wx.ID_ANY, u"Zoom In", wx.DefaultPosition, wx.DefaultSize, 0 )
+        bSizer3.Add( self.bZoomIn, 0, wx.ALL, 5 )
+
+        self.bReset = wx.Button( self.m_panel4, wx.ID_ANY, u"Reset", wx.DefaultPosition, wx.DefaultSize, 0 )
+        bSizer3.Add( self.bReset, 0, wx.ALL, 5 )
+
+        self.bZoomOut = wx.Button( self.m_panel4, wx.ID_ANY, u"Zoom Out", wx.DefaultPosition, wx.DefaultSize, 0 )
+        bSizer3.Add( self.bZoomOut, 0, wx.ALL, 5 )
+
+        self.m_panel4.SetSizer( bSizer3 )
+        self.m_panel4.Layout()
+        bSizer3.Fit( self.m_panel4 )
+        fgSizer1.Add( self.m_panel4, 1, wx.EXPAND |wx.ALL, 5 )
+
+        self.SetSizer( fgSizer1 )
+        self.Layout()
+        self.Centre( wx.BOTH )
+
+        self.bZoomIn.Bind( wx.EVT_BUTTON, self.onZoomIn )
+        self.bReset.Bind( wx.EVT_BUTTON, self.onZoomReset )
+        self.bZoomOut.Bind( wx.EVT_BUTTON, self.onZoomOut )
+
+    def __del__( self ):
+        pass
+
+    def onZoomIn( self, event ):
+        self.panelMain.onZoomIn()
+        event.Skip()
+
+    def onZoomReset( self, event ):
+        self.panelMain.onZoomReset()
+        event.Skip()
+
+    def onZoomOut( self, event ):
+        self.panelMain.onZoomOut()
+        event.Skip()
+
+
 if __name__=='__main__':
         app = wx.App(redirect=False)
-        frame = MyFrame1(None, (800, 600))
+        frame = TestFrame(None, (800, 600))
         frame.SetPosition((100, 100))
         frame.Show()
         app.MainLoop()
